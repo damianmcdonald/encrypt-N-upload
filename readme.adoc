@@ -1,0 +1,5 @@
+= encrypt-N-upload
+
+image:https://travis-ci.org/damianmcdonald/encrypt-N-upload.svg?branch=master["Build Status", link="https://travis-ci.org/damianmcdonald/encrypt-N-upload"]
+
+`encrypt-N-upload`, when completed, will be a project demonstrating AES encryption/decryption from Javascript to Java, Spring MVC multi part file upload with test cases and ReentrantReadWriteLock example usage
