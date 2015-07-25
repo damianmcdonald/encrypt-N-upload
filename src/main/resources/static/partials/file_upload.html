@@ -1,0 +1,37 @@
+<section>
+ <div class="page-header">
+        <h1>Step 2 <small>upload file</small></h1>
+        <div class="container-fluid" ng-controller="UploadFileController">
+          <div class="row">
+            <div class="col-md-3">
+                <h3>Upload file <small>as file</small></h3>
+                <div>
+                    <div>
+                        <span class="btn btn-default">
+                            Browse <input type="file" name="file" id="upload-file"/>
+                        </span>
+                    </div>
+                    <br/>
+                    <div>
+                        <button class="btn btn-default btn" ng-click="uploadFile()">Upload</button>
+                    </div>
+                </div>
+            </div>
+            <!-- The two divs below are hidden and will be optionally shown 
+                 if the ng-show condition matches. The two divs are mutually
+                 exclusive and can not be shown together.
+             -->
+             <div class="col-md-8 animate-notify" ng-show="hasUpload">
+                <h3>Server response <small>following upload</small></h3>
+                 <p>File upload at: {{response.uploadedFile}}</a></p>
+            </div>
+            <div class="col-md-8 animate-notify alert alert-danger" ng-show="noFormDataSupport">
+                <h3>Oh dear! <small>unsupported browser</small></h3>
+                <p>I'm afraid that there is some bad news.</p>
+                <p>The browser that you are currently using does not support HTML5 FormData.
+                    This demo application will not work in this browser.</p>
+                <p>It is recommended that you upgrade (or change) your current browser.</p>
+            </div>
+        </div>
+ </div>
+<section>

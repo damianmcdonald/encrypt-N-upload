@@ -2,57 +2,39 @@
 <html>
 <head>
     <meta charset="utf-8" >
+
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" type="text/css">
-    <link rel="stylesheet" href="css/override.css" type="text/css">
-    <script type="text/javascript" src="//code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="css/animate.css" type="text/css">
+
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+    <script type="text/javascript" src="//code.angularjs.org/1.4.3/angular-animate.min.js"></script>
     <script type="text/javascript" src="js/aes.js"></script>
     <script type="text/javascript" src="js/pbkdf2.js"></script>
     <script type="text/javascript" src="js/aesutil.js"></script>
     <script type="text/javascript" src="js/securityutil.js"></script>
     <script type="text/javascript" src="js/i18n.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-
+    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="js/controllers.js"></script>
+    
     <style>
-        .applinks { margin-top: 30px; text-align: center; }
-    </style>
+        .animate-notify.ng-hide-remove {
+          animation:0.5s pulse;
+        }
+    </style>    
+
     <title>encrypt-N-upload</title>
 
 </head>
-<body>
-<!-- Main jumbotron for a primary marketing message or call to action -->
-<div class="jumbotron">
-    <div class="container">
-        <h1>encrypt-N-upload</h1>
-        <p>Project demonstating AES encryption/decryption from Javascript to Java, Spring MVC multi part file upload with test cases and ReentrantReadWriteLock example usage.</p>
-        <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more &raquo;</a></p>
-    </div>
-</div>
-
-<div id="userPasswordSection">
-    <input type="text" id="userName" value="" class="input-lg center-block" placeholder="User Name"/>
-    <br>
-    <input type="password" id="password" value="" class="input-lg center-block" placeholder="Password   "/>
-    <br>
-    <button class="btn btn-default btn center-block" type="button" id="submitUserPassword"></button>
-</div>
-
-<!--modal window for errors-->
-<div class="modal fade bs-example-modal-md" tabindex="-1" role="dialog"
-     aria-labelledby="mySmallModalLabel" aria-hidden="true" id="modalError">
-    <div class="modal-dialog modal-md">
-        <div class="alert alert-danger alert-dismissable" id="alertError">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            </div>
-            <div class="row">
-                <div class="form-group">
-                    <message id="error"></message>
-                </div>
-            </div>
+<body ng-app="demoApp">
+    <div class="jumbotron">
+        <div class="container">
+            <h1>encrypt-N-upload</h1>
         </div>
     </div>
-</div>
+
+    <div ng-include="'partials/register_user.html'"></div>
+
+    <div ng-include="'partials/file_upload.html'"></div>
 
 </body>
 </html>

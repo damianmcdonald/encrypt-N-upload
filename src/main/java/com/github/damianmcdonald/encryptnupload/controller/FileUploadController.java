@@ -1,9 +1,5 @@
 package com.github.damianmcdonald.encryptnupload.controller;
 
-import com.github.damianmcdonald.encryptnupload.errors.EncryptNUploadErrorCode;
-import com.github.damianmcdonald.encryptnupload.errors.EncryptNUploadException;
-import com.github.damianmcdonald.encryptnupload.util.ValidationUtil;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,20 +15,28 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.ByteArrayMultipartFileEditor;
 
-@Controller
+import com.github.damianmcdonald.encryptnupload.domain.UploadResponse;
+import com.github.damianmcdonald.encryptnupload.errors.EncryptNUploadErrorCode;
+import com.github.damianmcdonald.encryptnupload.errors.EncryptNUploadException;
+import com.github.damianmcdonald.encryptnupload.service.RegistrationService;
+import com.github.damianmcdonald.encryptnupload.util.ValidationUtil;
+
+@RestController
 @RequestMapping(value = "/upload")
-public class FileUploadController { 
+public class FileUploadController {
+
+  private final Logger log = LoggerFactory.getLogger(this.getClass());
+
   @Value("${fileupload.directory}")
   private String uploadDir;
 
@@ -42,32 +46,32 @@ public class FileUploadController {
   @Value("${fileupload.whitelist}")
   private String[] whiteList;
 
-  private final Logger log = LoggerFactory.getLogger(this.getClass());
+  @Autowired
+  private RegistrationService registrationService;
 
   @RequestMapping(value = "/file", method = RequestMethod.POST)
-  public @ResponseBody String handleFileUpload(@RequestParam("filename") String fileName,
-      @RequestParam("hash") String hash, @RequestParam("secret") String sharedKey, 
-      @RequestParam("file") MultipartFile file, HttpServletRequest request) throws EncryptNUploadException {
-
+  public UploadResponse handleFileUpload(
+      @RequestParam("filename") String fileName,
+      @RequestParam("hash") String hash, 
+      @RequestParam("secret") String sharedKey,
+      @RequestParam("file") 
+      MultipartFile file, HttpServletRequest request)
+      throws EncryptNUploadException {
+    
     // validaton checks
     validate(sharedKey, request.getRemoteAddr());
 
     // some sanity checks
- 	ValidationUtil.validateMD5Format(hash, "hash");
- 	
+    ValidationUtil.validateMD5Format(hash, "hash");
+
     if (!file.isEmpty()) {
       try {
         byte[] bytes = file.getBytes();
         BufferedOutputStream stream =
-            new BufferedOutputStream(new FileOutputStream(new File(uploadDir + File.separator
-                + fileName)));
+            new BufferedOutputStream(new FileOutputStream(new File(uploadDir + File.separator + fileName)));
         stream.write(bytes);
         stream.close();
-        log.debug("You successfully uploaded " + fileName + "!");
-
-        log.debug("Calling FileUploadService to post file upload to external service");
-        final String filePath = uploadDir + File.separator + fileName;
-        return "Upload sucessfull";
+        return new UploadResponse(uploadDir + "/" + fileName);
       } catch (Exception e) {
         log.error("FAILURE >>>>> File upload failed.");
         e.printStackTrace();
@@ -80,28 +84,27 @@ public class FileUploadController {
   }
 
   @RequestMapping(value = "/bytes", method = RequestMethod.POST)
-  public @ResponseBody String handleByteArrayUpload(@RequestParam("filename") String fileName,
-      @RequestParam("hash") String hash, @RequestParam("secret") String sharedKey, 
-      @RequestParam("bytes") byte[] bytes, HttpServletRequest request) throws EncryptNUploadException {
+  public UploadResponse handleByteArrayUpload(
+      @RequestParam("filename") String fileName,
+      @RequestParam("hash") String hash, 
+      @RequestParam("secret") String sharedKey,
+      @RequestParam("bytes") byte[] bytes, 
+      HttpServletRequest request)
+      throws EncryptNUploadException {
 
     // validaton checks
     validate(sharedKey, request.getRemoteAddr());
 
     // some sanity checks
- 	ValidationUtil.validateMD5Format(hash, "hash");
- 	ValidationUtil.validateArrayNotEmpty(bytes, "bytes");
+    ValidationUtil.validateMD5Format(hash, "hash");
+    ValidationUtil.validateArrayNotEmpty(bytes, "bytes");
 
     try {
       BufferedOutputStream stream =
-          new BufferedOutputStream(new FileOutputStream(new File(uploadDir + File.separator
-              + fileName)));
+          new BufferedOutputStream(new FileOutputStream(new File(uploadDir + File.separator + fileName)));
       stream.write(bytes);
       stream.close();
-      log.debug("You successfully uploaded " + fileName + "!");
-
-      log.debug("Calling FileUploadService to post file upload to external service");
-      final String filePath = uploadDir + File.separator + fileName;
-      return "Upload successfull";
+      return new UploadResponse(uploadDir + "/" + fileName);
     } catch (Exception e) {
       log.error("FAILURE >>>>> File upload failed.");
       e.printStackTrace();
@@ -111,15 +114,15 @@ public class FileUploadController {
 
   @ExceptionHandler(Exception.class)
   public void handleAllException(HttpServletResponse response, Exception ex) throws IOException {
-	  ex.printStackTrace();
-	  response.setHeader("Error-Message", ex.getMessage());
-    	response.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
+    ex.printStackTrace();
+    response.setHeader("Error-Message", ex.getMessage());
+    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
   }
-  
+
   @InitBinder
   public void initBinder(ServletRequestDataBinder binder) {
-   // Convert multipart object to byte[]
-   	binder.registerCustomEditor(byte[].class, new ByteArrayMultipartFileEditor());
+    // Convert multipart object to byte[]
+    binder.registerCustomEditor(byte[].class, new ByteArrayMultipartFileEditor());
   }
 
   private boolean validate(String sharedKey, String ipAddress) throws EncryptNUploadException {

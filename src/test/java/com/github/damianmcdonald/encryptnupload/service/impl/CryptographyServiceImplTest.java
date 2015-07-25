@@ -37,8 +37,11 @@ public class CryptographyServiceImplTest extends EncryptNUploadApplicationTestDa
 	}
 	
 	@Test
-	public void decryptTest() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, InvalidAlgorithmParameterException {
-		final String decrytpedText = cryptographyService.decrypt(ENCRYPTED_USERNAME, PASSPHRASE_USERNAME, SALT_USERNAME, IV_USERNAME);
+	public void decryptTest() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, 
+	                                 IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, 
+	                                 InvalidAlgorithmParameterException {
+		final String decrytpedText = cryptographyService.decrypt(ENCRYPTED_USERNAME, PASSPHRASE_USERNAME, 
+		                                                         SALT_USERNAME, IV_USERNAME);
 		assertNotNull(decrytpedText);
 		assertTrue("decryptedText does not equal: " + USERNAME, USERNAME.equals(decrytpedText));
 	}

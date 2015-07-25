@@ -1,5 +1,4 @@
 # The following folders and files should not be tracked by git for this project
 .idea/
-src/test/scala-2.11/
 target/
 encrypt-n-upload.iml

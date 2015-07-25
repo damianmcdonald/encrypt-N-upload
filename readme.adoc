@@ -1,5 +1,360 @@
+:source-highlighter: coderay
+
 = encrypt-N-upload
 
 image:https://travis-ci.org/damianmcdonald/encrypt-N-upload.svg?branch=master["Build Status", link="https://travis-ci.org/damianmcdonald/encrypt-N-upload"]
 
-`encrypt-N-upload`, when completed, will be a project demonstrating AES encryption/decryption from Javascript to Java, Spring MVC multi part file upload with test cases and ReentrantReadWriteLock example usage
+`encrypt-N-upload`, is a demo application that began life as an integration app that proxied authentication requests from an internal server to an external authorization service. The application also accepted file uploads which would then be forwarded on to an external service.
+
+The application in its original form was very specific and not of much interest to anyone. Certain functionalities however were identified as being of potential interest to other developers. These functionalities were extracted into the separate `encrypt-N-upload` project which has been redacted and sanitized to protect the innocent.
+
+`encrypt-N-upload` demonstrates:
+
+* encrypting text in Javascript and decrypting it in Java
+* creating multi-part form handler controllers in Spring Boot
+* unit testing Spring Boot MVC controllers
+* use of Spring Boot scheduler for scheduling tasks
+* use of Java `ReentrantReadWriteLock` for obtaining read and write locks
+* creating a multi-part ajax form submit in AngularJS
+
+== Getting started
+
+The library was built using the following toolchain:
+
+* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java Oracle JDK 1.7]
+* https://maven.apache.org/download.cgi[Maven 3.2.3]
+
+Your mileage may vary with versions different than the ones specified above.
+
+Follow these steps to get started:
+
+1) Git-clone this repository.
+
+----
+$ git clone git://github.com/damianmcdonald/encrypt-N-upload.git my-project
+----
+
+2) Change directory into your clone:
+
+----
+$ cd my-project
+----
+    
+3) Use Maven to compile everything and run all tests:
+
+----
+$ mvn test
+----
+
+4) Start the application:
+
+----
+$ mvn jetty:run
+----
+
+5) Connect to the app in a browser:
+
+http://localhost:8080
+
+== Encrypting text in Javascript and decrypting it in Java
+
+One of the challenges that `encrypt-N-upload` attempts to address is sending encrypted data over the wire to a server.
+
+The data (username and password text) is encrypted on the client using a Javascript AES encryption implementation and decrypted on the server using Java. 
+
+There is a fundamental vulnerability with this approach because we will be sending _all_ the elements of the encryption process over the wire; encrypted text, pass phrase, salt and initialization vector. Furthermore, as Javascript code runs in the browser and is not hidden from the user, the implementation details of our encryption process are visible.
+
+Therefore it is important to realise that we are implementing security by obscurity and deterrence. Our goal is to make life as difficult as possible for a potential attacker. This is _not_ a robust security solution and is provided for information purposes only.
+
+Before going any further, it important to give credit to https://github.com/mpetersen/aes-example[aes-example]. The basis of the encryption/decryption used in `encrypt-N-upload` was taken directly from this project. Please take a look at this project to understand the Javascript libraries that are being used to perform the encryption.
+
+In https://github.com/mpetersen/aes-example[aes-example], the pass phrase is transferred in plain text from client to server. Any attacker intercepting these packets would have everything they need to decrypt the password.
+
+An example payload sent to the server is:
+
+[cols="1,1", options="header"]
+|===
+|Key
+|Value
+
+|ciphertext
+|XyFj6TeHB4Qo7Nj3sxFwCA==
+
+|iterationCount
+|1000
+
+|iv
+|d7cbe82247cb5ba34808e5e6cb63e122
+
+|keySize
+|128
+
+|passphrase
+|myPassPhrase
+
+|salt
+|40891014e3eb4e0f74432e82c3b97a01
+|===
+
+Given that we have the constraint of needing to send all the elements of the encryption process over the wire, it's not possible to avoid this situation. We can however make some improvements.
+
+The first improvement we make is to remove the `iterationCount` and `keySize` from the data transfer. We specify these values in both the client and server code so they already agree about these in advance.
+
+The second improvement is to generate a unique pass phrase on every request. Both client and server need to be able to reconstruct the pass phrase so we create a list containing all possible phrases. 
+
+To make life a little bit more difficult for an attacker, parts are _picked_ from the phrases to randomly generate a complete pass phrase.
+
+Once a complete pass phrase has been created, we use a letter cipher to represent the positional parts that were used to construct the pass phrase.
+
+It is this letter cipher that we transfer to the server. The server contains the same list of phrases and letter cipher listing as the client so it is able to reconstruct the pass phrase. An attacker intercepting the packets in the improved example will not have a usable pass phrase.
+
+Finally, we give the parameters generic names so it is not obvious what each parameter refers to. Again, this is not real security but every little step helps in obscuring and deterring a would be attacker.
+
+An example of the improved payload sent to the server:
+
+[cols="1,1,1", options="header"]
+|===
+|Key
+|Value
+|Corresponds To
+
+|parama
+|pzZDYAYqRJFXX5RVNqbFRA==
+|ciphertext
+
+|paramz
+|X=,zZ,@@,3X,L$,L$,Vx,zZ,Lt,n4
+|passphrase
+
+|paramc
+|c9e31bffee6a93007b2614a5c7a1320d
+|salt
+
+|paramx
+|6330e12e6df0021fa0a871615dc85997
+|iv
+|===
+
+If you wish to use this encryption/decryption in a real world application, you must ensure to:
+
+* obfuscate `securityutils.js`. This script file contains sensitive information and it should be as difficult for a human to read as possible. You can see the difference between the https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/resources/static/js/securityutil.js[non obfuscated] and obfuscated //TODO: link versions of the files.
+* deploy the application into a web application server that supports SSL/TLS and force traffic over `https`. This will ensure that attackers can not decrypt data packets that are intercepted over the wire.
+
+Project files of interest:
+
+* Javascript implementation: https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/resources/static/js/securityutil.js[securityutils.js]
+* Java implementation: https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/java/com/github/damianmcdonald/encryptnupload/service/impl/CryptographyServiceImpl.java[CryptographyServiceImpl.java] & https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/java/com/github/damianmcdonald/encryptnupload/util/AesUtil.java[AesUtil.java]
+
+== Spring Boot multi-part form handler controller
+
+The multi-part from handler controller used in this project is taken directly from the https://spring.io/guides/gs/uploading-files/[Uploading Files] getting started guide over on the Spring website.
+
+One point worth noting is that an exception was being fired when attempting to upload a file, as `byte[]`.
+
+The controller signature is:
+
+[source,java]
+----
+@RequestMapping(value = "/bytes", method = RequestMethod.POST)
+  public UploadResponse handleByteArrayUpload(
+      @RequestParam("filename") String fileName,
+      @RequestParam("hash") String hash, 
+      @RequestParam("secret") String sharedKey,
+      @RequestParam("bytes") byte[] bytes, 
+      HttpServletRequest request)
+      throws EncryptNUploadException {
+----
+
+The exception was:
+
+	org.springframework.validation.BindException: org.springframework.validation.BeanPropertyBindingResult: 1 errors
+	
+The solution to this problem was to register the `ByteArrayMultipartFileEditor` class to guide Spring to handle the conversion between the multipart object and byte array.
+
+[source,java]
+----
+@InitBinder
+public void initBinder(ServletRequestDataBinder binder) {
+  // Convert multipart object to byte[]
+  binder.registerCustomEditor(byte[].class, new ByteArrayMultipartFileEditor());
+}
+----
+
+Thanks to http://www.mkyong.com/spring-mvc/spring-mvc-file-upload-example/[mkyong.com] for the solution to this issue.
+
+The complete class can be viewed at: https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/java/com/github/damianmcdonald/encryptnupload/controller/FileUploadController.java[FileUploadController.java]
+
+== Unit testing Spring Boot MVC controllers
+
+`encrypt-N-upload` contains examples of how to unit test Spring Boot MVC controllers, including testing multi-part file uploads.
+
+An example can be viewed at; https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/test/java/com/github/damianmcdonald/encryptnupload/controller/FileUploadControllerTest.java[FileUploadControllerTest.java]
+
+http://www.petrikainulainen.net/programming/spring-framework/integration-testing-of-spring-mvc-applications-write-clean-assertions-with-jsonpath/[This blog post] is recommended for further reading.
+
+== Use of Spring Boot scheduler for scheduling tasks
+
+Enabling and invoking scheduled tasks in Spring Boot has been made very easy.
+
+The first step is to add the `@EnableScheduling` annotation to your application boot class.
+
+[source,java]
+.EncryptNUploadApplication
+----
+package com.github.damianmcdonald.encryptnupload;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@EnableScheduling
+public class EncryptNUploadApplication {
+
+  public static void main(String[] args) {
+    SpringApplication.run(EncryptNUploadApplication.class, args);
+  }
+}
+----
+
+Now that scheduling is enabled, the `@Scheduled` annotation can be added to methods that should be invoked on a schedule.
+
+[source,java]
+----
+@Scheduled(cron = "0 0/30 * * * ?")
+public void removeExpiredSessions() {
+	log.debug("Executing removeExpiredSessions");
+	registrationService.unregister();
+}
+----
+
+The complete class can be viewed at; https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/java/com/github/damianmcdonald/encryptnupload/service/impl/ReaperServiceImpl.java[ReaperServiceImpl.java]
+
+Spring offers different syntax for the scheduling expression. In this example, a cron expression has been used.
+
+For further details, please see _28.4.2 The @Scheduled Annotation_ section of the http://docs.spring.io/spring/docs/current/spring-framework-reference/html/scheduling.html[Scheduling] documentation provided by Spring.
+
+== Use of Java ReentrantReadWriteLock
+
+`encrypt-N-upload` makes use of Java's `ReentrantReadWriteLock` in order to allow callers to obtain read locks and write locks.
+
+Their usage in this project is very rudimentary but may serve as a starting point for your Java concurrency adventures.
+
+Our goal is to control access to a `java.util.Map` through the use of read locks and write locks.
+
+Below, we declare the `Map` and the `Locks`.
+
+[source,java]
+----
+private static final Map<String, RegisteredUser> REGISTRATION_MAP = new HashMap<String, RegisteredUser>();
+private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+private final Lock readLock = lock.readLock();
+private final Lock writeLock = lock.writeLock();
+----
+
+We have an `unregister` method, in which we make a mutation operation to our `Map`.
+
+It is important that we ensure exclusive write access to the `Map`. We want to avoid the possibility of multiple callers attempting to mutate the `Map` simultaneously.
+
+Notice the use of `writeLock.lock();`. With the write lock obtained, only this call will be able to mutate the `Map`.
+
+Remember to always wrap lock calls in a try / finally block, ensuring to release the lock in the finally block.
+
+[source,java]
+----
+@Override
+public void unregister() {
+  writeLock.lock();
+  try {
+    for (Iterator<Map.Entry<String, RegisteredUser>> it = REGISTRATION_MAP.entrySet().iterator(); it.hasNext();) {
+	  Map.Entry<String, RegisteredUser> entry = it.next();
+	  if (System.currentTimeMillis() - entry.getValue().getLastAccessTime() > sessionValidity) {
+	    it.remove();
+	  }
+    }
+  } finally {
+    writeLock.unlock();
+  }
+}
+----
+
+For immutable operations, such as retrieving elements from the `Map` there is no need to obtain a write lock. What we want in this case is a read lock. 
+
+This time a read lock is obtained via `readLock.lock();`. With the read lock obtained, we can now perform immutable operations on the `Map`.
+
+[source,java]
+----
+@Override
+public RegisteredUser getRegistration(String hash) throws EncryptNUploadException {
+  readLock.lock();
+  try {
+    RegisteredUser registeredUser = REGISTRATION_MAP.get(hash);
+    if (registeredUser != null) {
+      return registeredUser;
+    }
+    log.error("Unable to find user for hash: " + hash);
+    throw new EncryptNUploadException(EncryptNUploadErrorCode.UNRECOGNIZED_USER.getValue());
+  } finally {
+    readLock.unlock();
+  }
+}
+----
+
+The complete class can be viewed at; https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/java/com/github/damianmcdonald/encryptnupload/service/impl/RegistrationServiceImpl.java[RegistrationServiceImpl.java]
+
+The `java.util.concurrent.locks` package contains many classes that will help you with concurrency in Java.
+
+The example here just scratches the surface.
+
+Please take a look at the http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/locks/ReentrantReadWriteLock.html[API documentation] for `java.util.concurrent.locks` to learn more about `ReentrantReadWriteLock`.
+
+The Oracle Java https://docs.oracle.com/javase/tutorial/essential/concurrency/newlocks.html[Lock Objects] tutorial is also recommended reading.
+
+== Multi-part ajax form submit in AngularJS
+
+Finishing up with a little bit of client side code, `encrypt-N-upload` allows a user to upload a file. 
+
+The upload is performed via an Ajax call. 
+
+By default, AngularJS sets the `Content-Type` of Ajax calls to `application/json`. This is not suitable for a multi-part upload, which should have a `Content-Type` of  `multipart/form-data`.
+
+The solution is implemented as follows (some code noise has been reduced to help readability):
+
+[source,javascript]
+----
+demoApp.controller('UploadFileController', function($scope, $http, userHash) {
+    $scope.uploadFile = function() {
+      function doMultiPartPost(file, fileName) {
+          var fd = new FormData();
+		  // form data params
+          fd.append('file', file);
+          fd.append('filename', file.name);
+          fd.append('secret', 'kGQvUzSp#fLt+k+kUPk');
+          fd.append('hash', userHash.hash);
+          $http.post("upload/file", fd, {
+              transformRequest: angular.identity,
+              headers: {'Content-Type': undefined}
+          }).success(function (data, status) {
+              $scope.response = data;
+              $scope.hasUpload = true;
+          }).error(function(data, status, headers, config) {
+              alert("An error has occured with status: " + status);
+          });
+      }
+      var f = document.getElementById("upload-file").files[0];
+      doMultiPartPost(f, f.name);
+    }
+});
+----
+
+The interesting part is the `'Content-Type': undefined` and the `transformRequest: angular.identity` which give the `$http` service the ability to choose the right `'Content-Type'` and manage the boundary needed when handling multi-part data.
+
+Credit goes to Jenny Louthan's https://uncorkedstudios.com/blog/multipartformdata-file-upload-with-angularjs[blog] that provides a solution and explanation to this issue.
+
+The complete file can be viewed at; //TODO: insert link
+
+
+
+
+
+
