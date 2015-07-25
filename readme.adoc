@@ -137,7 +137,7 @@ An example of the improved payload sent to the server:
 
 If you wish to use this encryption/decryption in a real world application, you must ensure to:
 
-* obfuscate `securityutils.js`. This script file contains sensitive information and it should be as difficult for a human to read as possible. You can see the difference between the https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/resources/static/js/securityutil.js[non obfuscated] and obfuscated //TODO: link versions of the files.
+* obfuscate Javascript code. The Javascript files contain sensitive information and should be as difficult for a human to read as possible. You can see the difference between a https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/resources/static/js/securityutil.js[non obfuscated] and an https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/resources/static/js/securityutil-min.js[obfuscated] version of a file.
 * deploy the application into a web application server that supports SSL/TLS and force traffic over `https`. This will ensure that attackers can not decrypt data packets that are intercepted over the wire.
 
 Project files of interest:
