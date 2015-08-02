@@ -2,7 +2,7 @@
 
 = encrypt-N-upload
 
-image:https://travis-ci.org/damianmcdonald/encrypt-N-upload.svg?branch=master["Build Status", link="https://travis-ci.org/damianmcdonald/encrypt-N-upload"]
+image:https://travis-ci.org/damianmcdonald/encrypt-N-upload.svg?branch=master["Build Status", link="https://travis-ci.org/damianmcdonald/encrypt-N-upload"] image:https://go-shields.herokuapp.com/license-apache2-blue.png[License Apache2]
 
 `encrypt-N-upload`, is a demo application that began life as an integration app that proxied authentication requests from an internal server to an external authorization service. The application also accepted file uploads which would then be forwarded on to an external service.
 
