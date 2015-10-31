@@ -8,7 +8,7 @@ image:https://travis-ci.org/damianmcdonald/encrypt-N-upload.svg?branch=master["B
 
 The application in its original form was very specific and not of much interest to anyone. Certain functionalities however were identified as being of potential interest to other developers. These functionalities were extracted into the separate `encrypt-N-upload` project which has been redacted and sanitized to protect the innocent.
 
-A running instance of the code is available over at http://encrypt-n-upload.herokuapp.com[Heroku].
+A running instance of the code is available over at http://encrypt-n-upload.herokuapp.com[Heroku]. Be aware that the file uploading feature will not work on Heroku because your external IP address will not be part of the whitelist of accepted IP addresses - this is an intentional security rule configured via https://github.com/damianmcdonald/encrypt-N-upload/blob/master/src/main/resources/application.properties[application.properties].
 
 `encrypt-N-upload` demonstrates:
 
