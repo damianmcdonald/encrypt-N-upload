@@ -8,6 +8,8 @@ image:https://travis-ci.org/damianmcdonald/encrypt-N-upload.svg?branch=master["B
 
 The application in its original form was very specific and not of much interest to anyone. Certain functionalities however were identified as being of potential interest to other developers. These functionalities were extracted into the separate `encrypt-N-upload` project which has been redacted and sanitized to protect the innocent.
 
+A running instance of the code is available over at http://encrypt-n-upload.herokuapp.com[Heroku].
+
 `encrypt-N-upload` demonstrates:
 
 * encrypting text in Javascript and decrypting it in Java

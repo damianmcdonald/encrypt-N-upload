@@ -6,7 +6,7 @@
 	<groupId>com.githb.damianmcdonald</groupId>
 	<artifactId>encrypt-n-upload</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 
 	<name>encrypt-N-upload</name>
 	<description>Project demonstrating AES encryption/decryption from Javascript to Java, Spring MVC multi part file upload with test cases and ReentrantReadWriteLock example usage</description>
@@ -57,6 +57,7 @@
 	</dependencies>
 	
 	<build>
+                <finalName>encrypt-n-upload</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
